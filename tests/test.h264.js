@@ -4,6 +4,7 @@ import Display from '../core/display.js';
 import { H264Parser } from '../core/decoders/h264.js';
 import H264Decoder from '../core/decoders/h264.js';
 import Base64 from '../core/base64.js';
+import { supportsWebCodecsH264Decode } from '../core/util/browser.js';
 
 import FakeWebSocket from './fake.websocket.js';
 
@@ -28,30 +29,6 @@ const redGreenBlue16x16Video = new Uint8Array(Base64.decode(
     'OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMACAAAABZYiEBrxmKAAPVccAAS04' +
     '4AA5DRJMnkycJk4TPwAAAAFBiIga8RigADVVHAAGaGOAANtuAAAAAUGIkBr///wRRQABVf8c' +
     'AAcho4AAiD4='));
-
-let _haveH264Decode = null;
-
-async function haveH264Decode() {
-    if (_haveH264Decode !== null) {
-        return _haveH264Decode;
-    }
-
-    if (!('VideoDecoder' in window)) {
-        _haveH264Decode = false;
-        return false;
-    }
-
-    // We'll need to make do with some placeholders here
-    const config = {
-        codec: 'avc1.42401f',
-        codedWidth: 1920,
-        codedHeight: 1080,
-        optimizeForLatency: true,
-    };
-
-    _haveH264Decode = await VideoDecoder.isConfigSupported(config);
-    return _haveH264Decode;
-}
 
 function createSolidColorFrameBuffer(color, width, height) {
     const r = (color >> 24) & 0xff;
@@ -131,7 +108,7 @@ function almost(a, b) {
     return diff < 5;
 }
 
-describe('H.264 Parser', function () {
+describe('H.264 parser', function () {
     it('should parse constrained baseline video', function () {
         let parser = new H264Parser(redGreenBlue16x16Video);
 
@@ -153,11 +130,11 @@ describe('H.264 Parser', function () {
     });
 });
 
-describe('H.264 Decoder Unit Test', function () {
+describe('H.264 decoder unit test', function () {
     let decoder;
 
-    beforeEach(async function () {
-        if (!await haveH264Decode()) {
+    beforeEach(function () {
+        if (!supportsWebCodecsH264Decode) {
             this.skip();
             return;
         }
@@ -204,15 +181,15 @@ describe('H.264 Decoder Unit Test', function () {
     });
 });
 
-describe('H.264 Decoder Functional Test', function () {
+describe('H.264 decoder functional test', function () {
     let decoder;
     let display;
 
     before(FakeWebSocket.replace);
     after(FakeWebSocket.restore);
 
-    beforeEach(async function () {
-        if (!await haveH264Decode()) {
+    beforeEach(function () {
+        if (!supportsWebCodecsH264Decode) {
             this.skip();
             return;
         }
